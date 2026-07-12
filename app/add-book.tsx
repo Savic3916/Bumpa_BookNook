@@ -6,6 +6,8 @@ import {
     ActivityIndicator,
     Alert,
     Image,
+    KeyboardAvoidingView,
+    Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -69,6 +71,7 @@ export default function AddBook() {
             ).unwrap();
             router.back();
         } catch (e) {
+            console.log("SAVE ERROR:", e);
             Alert.alert("Error", "Could not save the book. Please try again.");
         } finally {
             setSaving(false);
@@ -76,79 +79,89 @@ export default function AddBook() {
     };
 
     return (
-        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-            <View style={styles.headerRow}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <FontAwesome name="arrow-left" size={20} color={Colors.text} />
+        <KeyboardAvoidingView
+            style={styles.container}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0}
+        >
+            <ScrollView
+                style={styles.container}
+                contentContainerStyle={styles.content}
+                keyboardShouldPersistTaps="handled"
+            >
+                <View style={styles.headerRow}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                        <FontAwesome name="arrow-left" size={20} color={Colors.text} />
+                    </TouchableOpacity>
+                    <Text style={styles.header}>Add a Book</Text>
+                    <View style={{ width: 20 }} />
+                </View>
+
+                <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
+                    {image ? (
+                        <Image source={{ uri: image }} style={styles.previewImage} />
+                    ) : (
+                        <>
+                            <FontAwesome name="camera" size={24} color={Colors.textMuted} />
+                            <Text style={styles.imagePickerText}>Add Cover Image</Text>
+                        </>
+                    )}
                 </TouchableOpacity>
-                <Text style={styles.header}>Add a Book</Text>
-                <View style={{ width: 20 }} />
-            </View>
 
-            <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
-                {image ? (
-                    <Image source={{ uri: image }} style={styles.previewImage} />
-                ) : (
-                    <>
-                        <FontAwesome name="camera" size={24} color={Colors.textMuted} />
-                        <Text style={styles.imagePickerText}>Add Cover Image</Text>
-                    </>
-                )}
-            </TouchableOpacity>
+                <Text style={styles.label}>Title</Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="e.g. The Midnight Library"
+                    placeholderTextColor={Colors.textMuted}
+                    value={title}
+                    onChangeText={setTitle}
+                />
 
-            <Text style={styles.label}>Title</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="e.g. The Midnight Library"
-                placeholderTextColor={Colors.textMuted}
-                value={title}
-                onChangeText={setTitle}
-            />
+                <Text style={styles.label}>Author</Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="e.g. Matt Haig"
+                    placeholderTextColor={Colors.textMuted}
+                    value={author}
+                    onChangeText={setAuthor}
+                />
 
-            <Text style={styles.label}>Author</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="e.g. Matt Haig"
-                placeholderTextColor={Colors.textMuted}
-                value={author}
-                onChangeText={setAuthor}
-            />
+                <Text style={styles.label}>Price</Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="e.g. 14.99"
+                    placeholderTextColor={Colors.textMuted}
+                    keyboardType="decimal-pad"
+                    value={price}
+                    onChangeText={setPrice}
+                />
 
-            <Text style={styles.label}>Price</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="e.g. 14.99"
-                placeholderTextColor={Colors.textMuted}
-                keyboardType="decimal-pad"
-                value={price}
-                onChangeText={setPrice}
-            />
+                <Text style={styles.label}>Rating</Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="e.g. 4.5"
+                    placeholderTextColor={Colors.textMuted}
+                    keyboardType="decimal-pad"
+                    value={rating}
+                    onChangeText={setRating}
+                />
 
-            <Text style={styles.label}>Rating</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="e.g. 4.5"
-                placeholderTextColor={Colors.textMuted}
-                keyboardType="decimal-pad"
-                value={rating}
-                onChangeText={setRating}
-            />
+                <Text style={styles.label}>Description</Text>
+                <TextInput
+                    style={[styles.input, styles.textArea]}
+                    placeholder="What's this book about?"
+                    placeholderTextColor={Colors.textMuted}
+                    multiline
+                    numberOfLines={5}
+                    value={description}
+                    onChangeText={setDescription}
+                />
 
-            <Text style={styles.label}>Description</Text>
-            <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="What's this book about?"
-                placeholderTextColor={Colors.textMuted}
-                multiline
-                numberOfLines={5}
-                value={description}
-                onChangeText={setDescription}
-            />
-
-            <TouchableOpacity style={styles.submitButton} onPress={handleSave} disabled={saving}>
-                {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.submitButtonText}>Save Book</Text>}
-            </TouchableOpacity>
-        </ScrollView>
+                <TouchableOpacity style={styles.submitButton} onPress={handleSave} disabled={saving}>
+                    {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.submitButtonText}>Save Book</Text>}
+                </TouchableOpacity>
+            </ScrollView>
+        </KeyboardAvoidingView>
     );
 }
 
