@@ -1,10 +1,9 @@
-// app/add-book.tsx
-import { addBookToFirestore } from "@/lib/booksApi";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+    ActivityIndicator,
     Alert,
     Image,
     ScrollView,
@@ -15,18 +14,12 @@ import {
     View
 } from "react-native";
 import { Colors } from "../constant/Color";
-
-interface Books {
-    title: string;
-    author: string;
-    price: number;
-    rating: number;
-    description: string;
-    coverUrl: string | null;
-}
+import { addBook } from "../store/booksSlice";
+import { useAppDispatch } from "../store/hooks";
 
 export default function AddBook() {
     const router = useRouter();
+    const dispatch = useAppDispatch();
 
     const [image, setImage] = useState<string | null>(null);
     const [title, setTitle] = useState("");
@@ -34,6 +27,7 @@ export default function AddBook() {
     const [price, setPrice] = useState("");
     const [rating, setRating] = useState("");
     const [description, setDescription] = useState("");
+    const [saving, setSaving] = useState(false);
 
     const pickImage = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -61,20 +55,23 @@ export default function AddBook() {
             return;
         }
 
-        const newBook: Books = {
-            title,
-            author,
-            price: parseFloat(price) || 0,
-            rating: parseFloat(rating) || 0,
-            description,
-            coverUrl: image,
-        };
-
+        setSaving(true);
         try {
-            await addBookToFirestore(newBook);
+            await dispatch(
+                addBook({
+                    title,
+                    author,
+                    price: parseFloat(price) || 0,
+                    rating: parseFloat(rating) || 0,
+                    description,
+                    coverUrl: image,
+                })
+            ).unwrap();
             router.back();
         } catch (e) {
             Alert.alert("Error", "Could not save the book. Please try again.");
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -148,96 +145,32 @@ export default function AddBook() {
                 onChangeText={setDescription}
             />
 
-            <TouchableOpacity style={styles.submitButton} onPress={handleSave}>
-                <Text style={styles.submitButtonText}>Save Book</Text>
+            <TouchableOpacity style={styles.submitButton} onPress={handleSave} disabled={saving}>
+                {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.submitButtonText}>Save Book</Text>}
             </TouchableOpacity>
         </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.background,
-    },
-    content: {
-        paddingHorizontal: 20,
-        paddingTop: 60,
-        paddingBottom: 60,
-    },
-    headerRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginBottom: 24,
-    },
-    backButton: {
-        width: 36,
-        height: 36,
-        justifyContent: "center",
-    },
-    header: {
-        fontSize: 20,
-        fontWeight: "700",
-        color: Colors.text,
-    },
+    container: { flex: 1, backgroundColor: Colors.background },
+    content: { paddingHorizontal: 20, paddingTop: 60, paddingBottom: 60 },
+    headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 24 },
+    backButton: { width: 36, height: 36, justifyContent: "center" },
+    header: { fontSize: 20, fontWeight: "700", color: Colors.text },
     imagePicker: {
-        alignSelf: "center",
-        width: 140,
-        height: 200,
-        borderRadius: 14,
-        backgroundColor: Colors.input,
-        borderWidth: 1,
-        borderColor: Colors.border,
-        borderStyle: "dashed",
-        justifyContent: "center",
-        alignItems: "center",
-        marginBottom: 28,
-        overflow: "hidden",
+        alignSelf: "center", width: 140, height: 200, borderRadius: 14, backgroundColor: Colors.input,
+        borderWidth: 1, borderColor: Colors.border, borderStyle: "dashed", justifyContent: "center",
+        alignItems: "center", marginBottom: 28, overflow: "hidden",
     },
-    previewImage: {
-        width: "100%",
-        height: "100%",
-    },
-    imagePickerText: {
-        marginTop: 8,
-        fontSize: 13,
-        color: Colors.textMuted,
-    },
-    label: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: Colors.text,
-        marginBottom: 6,
-        marginTop: 14,
-    },
-    input: {
-        backgroundColor: Colors.input,
-        borderRadius: 12,
-        paddingHorizontal: 14,
-        paddingVertical: 12,
-        fontSize: 15,
-        color: Colors.text,
-    },
-    textArea: {
-        height: 110,
-        textAlignVertical: "top",
-    },
+    previewImage: { width: "100%", height: "100%" },
+    imagePickerText: { marginTop: 8, fontSize: 13, color: Colors.textMuted },
+    label: { fontSize: 14, fontWeight: "600", color: Colors.text, marginBottom: 6, marginTop: 14 },
+    input: { backgroundColor: Colors.input, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: Colors.text },
+    textArea: { height: 110, textAlignVertical: "top" },
     submitButton: {
-        backgroundColor: Colors.primary,
-        borderRadius: 14,
-        paddingVertical: 15,
-        alignItems: "center",
-        marginTop: 30,
-        shadowColor: Colors.primaryDark,
-        shadowOpacity: 0.25,
-        shadowRadius: 6,
-        shadowOffset: { width: 0, height: 3 },
-        elevation: 3,
+        backgroundColor: Colors.primary, borderRadius: 14, paddingVertical: 15, alignItems: "center", marginTop: 30,
+        shadowColor: Colors.primaryDark, shadowOpacity: 0.25, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 3,
     },
-    submitButtonText: {
-        color: Colors.white,
-        fontSize: 16,
-        fontWeight: "700",
-    },
+    submitButtonText: { color: Colors.white, fontSize: 16, fontWeight: "700" },
 });
