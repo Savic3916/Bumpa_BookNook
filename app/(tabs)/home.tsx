@@ -41,7 +41,7 @@ export default function Home() {
         <View style={styles.container}>
             <View style={styles.headerRow}>
                 <Text style={styles.header}>Book Nook</Text>
-                <TouchableOpacity style={styles.addButton}>
+                <TouchableOpacity style={styles.addButton} onPress={() => router.navigate("/add-book")}>
                     <FontAwesome name="plus" size={18} color={Colors.white} />
                 </TouchableOpacity>
             </View>
