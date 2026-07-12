@@ -1,19 +1,82 @@
 // app/add-book.tsx
+import { addBookToFirestore } from "@/lib/booksApi";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
+    Alert,
+    Image,
     ScrollView,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from "react-native";
 import { Colors } from "../constant/Color";
 
+interface Books {
+    title: string;
+    author: string;
+    price: number;
+    rating: number;
+    description: string;
+    coverUrl: string | null;
+}
+
 export default function AddBook() {
     const router = useRouter();
+
+    const [image, setImage] = useState<string | null>(null);
+    const [title, setTitle] = useState("");
+    const [author, setAuthor] = useState("");
+    const [price, setPrice] = useState("");
+    const [rating, setRating] = useState("");
+    const [description, setDescription] = useState("");
+
+    const pickImage = async () => {
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+        if (!permissionResult.granted) {
+            Alert.alert('Permission required', 'Permission to access the media library is required.');
+            return;
+        }
+
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+        });
+
+        if (!result.canceled) {
+            setImage(result.assets[0].uri);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!title || !author || !price) {
+            Alert.alert("Missing info", "Title, author, and price are required.");
+            return;
+        }
+
+        const newBook: Books = {
+            title,
+            author,
+            price: parseFloat(price) || 0,
+            rating: parseFloat(rating) || 0,
+            description,
+            coverUrl: image,
+        };
+
+        try {
+            await addBookToFirestore(newBook);
+            router.back();
+        } catch (e) {
+            Alert.alert("Error", "Could not save the book. Please try again.");
+        }
+    };
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -25,9 +88,15 @@ export default function AddBook() {
                 <View style={{ width: 20 }} />
             </View>
 
-            <TouchableOpacity style={styles.imagePicker}>
-                <FontAwesome name="camera" size={24} color={Colors.textMuted} />
-                <Text style={styles.imagePickerText}>Add Cover Image</Text>
+            <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
+                {image ? (
+                    <Image source={{ uri: image }} style={styles.previewImage} />
+                ) : (
+                    <>
+                        <FontAwesome name="camera" size={24} color={Colors.textMuted} />
+                        <Text style={styles.imagePickerText}>Add Cover Image</Text>
+                    </>
+                )}
             </TouchableOpacity>
 
             <Text style={styles.label}>Title</Text>
@@ -35,6 +104,8 @@ export default function AddBook() {
                 style={styles.input}
                 placeholder="e.g. The Midnight Library"
                 placeholderTextColor={Colors.textMuted}
+                value={title}
+                onChangeText={setTitle}
             />
 
             <Text style={styles.label}>Author</Text>
@@ -42,6 +113,8 @@ export default function AddBook() {
                 style={styles.input}
                 placeholder="e.g. Matt Haig"
                 placeholderTextColor={Colors.textMuted}
+                value={author}
+                onChangeText={setAuthor}
             />
 
             <Text style={styles.label}>Price</Text>
@@ -50,6 +123,8 @@ export default function AddBook() {
                 placeholder="e.g. 14.99"
                 placeholderTextColor={Colors.textMuted}
                 keyboardType="decimal-pad"
+                value={price}
+                onChangeText={setPrice}
             />
 
             <Text style={styles.label}>Rating</Text>
@@ -58,6 +133,8 @@ export default function AddBook() {
                 placeholder="e.g. 4.5"
                 placeholderTextColor={Colors.textMuted}
                 keyboardType="decimal-pad"
+                value={rating}
+                onChangeText={setRating}
             />
 
             <Text style={styles.label}>Description</Text>
@@ -67,9 +144,11 @@ export default function AddBook() {
                 placeholderTextColor={Colors.textMuted}
                 multiline
                 numberOfLines={5}
+                value={description}
+                onChangeText={setDescription}
             />
 
-            <TouchableOpacity style={styles.submitButton}>
+            <TouchableOpacity style={styles.submitButton} onPress={handleSave}>
                 <Text style={styles.submitButtonText}>Save Book</Text>
             </TouchableOpacity>
         </ScrollView>
@@ -114,6 +193,11 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         marginBottom: 28,
+        overflow: "hidden",
+    },
+    previewImage: {
+        width: "100%",
+        height: "100%",
     },
     imagePickerText: {
         marginTop: 8,
